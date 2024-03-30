@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 public struct FM_Vertices_Type {
     /// <summary>
@@ -108,4 +109,11 @@ public struct FM_State_Type {
 
     //ids of state provinces
     public List<uint> provinces;
+}
+
+public struct MeshDataType
+{
+    public Vector3[] vertices;
+    public Vector2[] uvs;
+    public List<int> triangles;
 }

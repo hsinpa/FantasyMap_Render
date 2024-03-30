@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using UnityEngine;
 using SimpleJSON;
 using Hsinpa.Map;
-using log4net.ObjectRenderer;
 using UnityEngine.UI;
 using System.Linq;
 using System.Net;
@@ -15,7 +14,7 @@ namespace Hsinpa {
     public class FantasyMapRender : MonoBehaviour
     {
         [SerializeField]
-        private RawImage debug_map_image;
+        private MeshFilter meshFilter;
 
         FantasyMapModel map_model;
         Texture2D map_texture;
@@ -38,50 +37,15 @@ namespace Hsinpa {
         {
             await PrepareModel();
 
-            var vertices_dict = map_model.vertices_dict;
-            var vertices_list = vertices_dict.Values.ToList();
-            int vertices_lens = vertices_list.Count;
+            Mesh mesh = new Mesh();
+            MeshDataType meshDataType =  await Task.Run( () => RenderMapMesh(WIDTH, HEIGHT, map_model.vertices_dict, map_model.cells_dict));
 
-            //for (int i = 0; i < vertices_lens; i++)
-            //{
-            //    map_texture.SetPixel((int)vertices_list[i].p[0], HEIGHT - (int)vertices_list[i].p[1], Color.white);
-            //}
+            mesh.SetVertices(meshDataType.vertices);
+            mesh.SetUVs(channel: 0, uvs: meshDataType.uvs);
+            mesh.SetTriangles(meshDataType.triangles, 0);
 
-            var cell_dict = map_model.cells_dict;
-            var cell_list = cell_dict.Values.ToList();
-            int cell_lens = cell_list.Count;
-
-            for (int i = 0; i < cell_lens; i++)
-            {
-                FM_Cells_Type cell = cell_list[i];
-                int c_vertice_lens = cell.v.Length;
-                for (int v = 0; v < c_vertice_lens; v++)
-                {
-                    FM_Vertices_Type vertice_a = vertices_dict[cell.v[v]];
-                    FM_Vertices_Type vertice_b;
-
-                    if (v == 0) {
-                        vertice_b = vertices_dict[cell.v[c_vertice_lens - 1]];
-                    } else
-                    {
-                        vertice_b = vertices_dict[cell.v[v - 1]];
-                    }
-
-                    DrawLine(new Vector2(vertice_a.p[0], vertice_a.p[1]),
-                            new Vector2(vertice_b.p[0], vertice_b.p[1]),
-                            Color.green, map_texture
-                        );
-                }
-            }
-
-
-
-            map_texture.Apply();
-
-            if (debug_map_image != null)
-                debug_map_image.texture = map_texture;
+            meshFilter.mesh = mesh;
         }
-
 
         private void DrawLine(Vector2 point1, Vector2 point2, Color color, Texture2D targetTexture)
         {
@@ -112,5 +76,56 @@ namespace Hsinpa {
             await map_model.Load(path);
         }
 
+
+        private MeshDataType RenderMapMesh(int width, int height, Dictionary<uint, FM_Vertices_Type> vertices_dict, Dictionary<uint, FM_Cells_Type> cells_dict)
+        {
+            MeshDataType mesh = new MeshDataType();
+            var vertices_list = vertices_dict.Values.ToList();
+            int vertices_lens = vertices_list.Count;
+
+            var cell_list = cells_dict.Values.ToList();
+            int cell_lens = cell_list.Count;
+
+            Vector3[] vertices = new Vector3[vertices_lens + cell_lens];
+            Vector2[] uvs = new Vector2[vertices_lens + cell_lens];
+            List<int> triangles = new List<int>();
+
+            // Create Vertices and UV
+            for (int vertices_index = 0; vertices_index < vertices_lens; vertices_index++)
+            {
+                FM_Vertices_Type vertices_type = vertices_list[vertices_index];
+                vertices[vertices_index] = new Vector3(vertices_type.p[0], 0, vertices_type.p[1]);
+                uvs[vertices_index] = new Vector2(vertices_type.p[0] / width, vertices_type.p[1] / height);
+            }
+
+            // Create Triangle
+            for (int cell_index = 0; cell_index < cell_lens; cell_index++) {
+                int connect_vertices_lens = cell_list[cell_index].v.Length;
+                Vector3 cell_center = new Vector3(cell_list[cell_index].p[0], 0, cell_list[cell_index].p[1]);
+
+                int cell_vertices_index = vertices_lens + cell_index;
+                vertices[cell_vertices_index] = cell_center;
+                uvs[cell_vertices_index] = new Vector2(cell_center.x / width, cell_center.y / height);
+
+
+                for (int cv_index = 0; cv_index < connect_vertices_lens; cv_index++)
+                {
+                    int child_a = (int)cell_list[cell_index].v[cv_index];
+
+                    int child_b_index = (cv_index == 0) ? connect_vertices_lens - 1 : cv_index - 1;
+                    int child_b = (int)cell_list[cell_index].v[child_b_index];
+
+                    triangles.Add(cell_vertices_index);
+                    triangles.Add(child_a);
+                    triangles.Add(child_b);
+                }
+            }
+
+            mesh.vertices = (vertices);
+            mesh.uvs = uvs;
+            mesh.triangles = triangles;
+
+            return mesh;
+        }
     }
 }
