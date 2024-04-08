@@ -1,0 +1,2 @@
+# Phi
+https://huggingface.co/TheBloke/phi-2-GGUF/blob/main/phi-2.Q4_K_M.gguf

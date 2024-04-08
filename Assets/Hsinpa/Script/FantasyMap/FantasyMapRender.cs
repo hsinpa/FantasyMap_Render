@@ -9,6 +9,7 @@ using UnityEngine.UI;
 using System.Linq;
 using System.Net;
 using System;
+using Hsinpa.Inference;
 
 namespace Hsinpa {
     public class FantasyMapRender : MonoBehaviour
@@ -30,6 +31,9 @@ namespace Hsinpa {
             map_texture = new Texture2D(WIDTH, HEIGHT, TextureFormat.ARGB32, false);
 
             RenderMap();
+
+            //var llm_inference = new LllmInference();
+            //llm_inference.Load();
         }
 
 
