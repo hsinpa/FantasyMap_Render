@@ -1,8 +1,11 @@
+using Hsinpa.Algorithm;
 using SimpleJSON;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace Hsinpa.Map
@@ -14,6 +17,74 @@ namespace Hsinpa.Map
         public Dictionary<uint, FM_Province_Type> provinces_dict = new Dictionary<uint, FM_Province_Type>();
         public Dictionary<uint, FM_State_Type> states_dict = new Dictionary<uint, FM_State_Type>();
 
+        public QuadTree quadTree;
+        private int _width;
+        private int _height;
+
+        public FantasyMapModel(int map_width, int map_height)
+        {
+            this._width = map_width;
+            this._height = map_height;
+
+            float2 extend = new float2(map_width * 0.5f, map_height * 0.5f);
+            quadTree = new QuadTree(new QuadTreeUti.QuadRect(extend.x, extend.y, extend));
+        }
+
+        #region Mesh
+        public MeshDataType RenderMapMesh()
+        {
+            MeshDataType mesh = new MeshDataType();
+            var vertices_list = this.vertices_dict.Values.ToList();
+            int vertices_lens = vertices_list.Count;
+
+            var cell_list = this.cells_dict.Values.ToList();
+            int cell_lens = cell_list.Count;
+
+            Vector3[] vertices = new Vector3[vertices_lens + cell_lens];
+            Vector2[] uvs = new Vector2[vertices_lens + cell_lens];
+            List<int> triangles = new List<int>();
+
+            // Create Vertices and UV
+            for (int vertices_index = 0; vertices_index < vertices_lens; vertices_index++)
+            {
+                FM_Vertices_Type vertices_type = vertices_list[vertices_index];
+                vertices[vertices_index] = new Vector3(vertices_type.p[0], 0, vertices_type.p[1]);
+                uvs[vertices_index] = new Vector2(vertices_type.p[0] / (float)this._width, vertices_type.p[1] / (float)this._height);
+            }
+
+            // Create Triangle
+            for (int cell_index = 0; cell_index < cell_lens; cell_index++)
+            {
+                int connect_vertices_lens = cell_list[cell_index].v.Length;
+                Vector3 cell_center = new Vector3(cell_list[cell_index].p[0], 0, cell_list[cell_index].p[1]);
+
+                int cell_vertices_index = vertices_lens + cell_index;
+                vertices[cell_vertices_index] = cell_center;
+                uvs[cell_vertices_index] = new Vector2(cell_center.x / (float)this._width, cell_center.z / (float)this._height);
+
+                quadTree.Insert(new QuadTreeUti.Point() { x = cell_center.x, y = cell_center.z, id = (int)cell_list[cell_index].i });
+
+                for (int cv_index = 0; cv_index < connect_vertices_lens; cv_index++)
+                {
+                    int child_a = (int)cell_list[cell_index].v[cv_index];
+                    int child_b_index = (cv_index == 0) ? connect_vertices_lens - 1 : cv_index - 1;
+                    int child_b = (int)cell_list[cell_index].v[child_b_index];
+
+                    triangles.Add(cell_vertices_index);
+                    triangles.Add(child_a);
+                    triangles.Add(child_b);
+                }
+            }
+
+            mesh.vertices = (vertices);
+            mesh.uvs = uvs;
+            mesh.triangles = triangles;
+
+            return mesh;
+        }
+        #endregion
+
+        #region Load Data
         public async Task Load(string file_path)
         {
             string full_text = await File.ReadAllTextAsync(file_path);
@@ -26,11 +97,11 @@ namespace Hsinpa.Map
                 var provinces = simple_json["cells"]["provinces"].AsArray;
                 var states = simple_json["cells"]["states"].AsArray;
 
-                cells_dict = Load_Map_Cells(cells);
-                vertices_dict = Load_Map_Vertices(vertices);
                 provinces_dict = Load_Map_Province(provinces);
                 states_dict = Load_Map_State(states);
 
+                cells_dict = Load_Map_Cells(cells);
+                vertices_dict = Load_Map_Vertices(vertices);
 
                 Debug.Log("Simple json readed");
             });
@@ -58,6 +129,12 @@ namespace Hsinpa.Map
             {
                 FM_Cells_Type cells = JsonUtility.FromJson<FM_Cells_Type>(cells_array[i].ToString());
 
+                //Save to Province
+                if (provinces_dict.TryGetValue(cells.province, out var province_type))
+                {
+                    province_type.cells.Add(cells);
+                }
+
                 if (!cell_dict.ContainsKey(cells.i))
                     cell_dict.Add(cells.i, cells);
             }
@@ -76,6 +153,7 @@ namespace Hsinpa.Map
                 if (!raw_json.StartsWith("{")) continue;
 
                 FM_Province_Type province = JsonUtility.FromJson<FM_Province_Type>(raw_json);
+                province.cells = new List<FM_Cells_Type>();
 
                 province_dict.Add(province.i, province);
             }
@@ -95,6 +173,6 @@ namespace Hsinpa.Map
 
             return states_dict;
         }
-
+        #endregion
     }
 }

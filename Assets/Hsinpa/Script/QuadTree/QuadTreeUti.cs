@@ -11,6 +11,10 @@ namespace Hsinpa.Algorithm
         public struct Point {
             public float x;
             public float y;
+
+            /// <summary>
+            /// Reference to your own interested object
+            /// </summary>
             public int id;
         }
 

@@ -34,6 +34,9 @@ public struct FM_Cells_Type {
     public uint[] c;
 
     public uint area;
+
+    public uint province;
+    public uint state;
 }
 
 public struct FM_Burg_Type {
@@ -67,6 +70,8 @@ public struct FM_Province_Type {
     public string name;
     public string formName;
     public string fullName;
+
+    public List<FM_Cells_Type> cells;
 
     public string color;
 }
