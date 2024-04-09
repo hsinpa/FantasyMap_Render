@@ -98,6 +98,22 @@ namespace Hsinpa.Algorithm {
             if (points != null) _southEastBranch.QueryRect(quadRect, ref points);
         }
 
+        public void RecursiveQueryRect(int query_area, int x, int y, int current_expansion, int max_expansion, 
+                                        ref List<QuadTreeUti.Point> points) {
+
+            if (current_expansion >= max_expansion) return;
+
+            float2 extends = new float2(query_area , query_area);
+            QuadTreeUti.QuadRect quad_rect = new QuadTreeUti.QuadRect() {x=x, y=y, extends=extends};
+
+            QueryRect(quad_rect, ref points);
+
+            if (points.Count <= 0) {
+                RecursiveQueryRect(query_area * 2, x, y, current_expansion+1, max_expansion, ref points);
+                return;
+            }
+        }
+
         public void QueryRadius(float2 point, float radius)
         {
 

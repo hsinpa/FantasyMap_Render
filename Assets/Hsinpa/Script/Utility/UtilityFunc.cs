@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Mathematics;
 using UnityEngine;
 
 
@@ -84,6 +85,18 @@ namespace Hsinpa.Winweed.Uti
         {
             if (Application.isPlaying) Object.Destroy(p_object);
             if (Application.isEditor) Object.DestroyImmediate(p_object);
+        }
+
+        public static bool IsInsideTriangle(float2 p, float2 v0, float2 v1, float2 v2) {
+            float alpha = ((v1.y - v2.y) * (p.x - v2.x) + (v2.x - v1.x) * (p.y - v2.y)) /
+                ((v1.y - v2.y) * (v0.x - v2.x) + (v2.x - v1.x) * (v0.y - v2.y));
+
+            float beta = ((v2.y - v0.y) * (p.x - v2.x) + (v0.x - v2.x) * (p.y - v2.y)) /
+                        ((v1.y - v2.y) * (v0.x - v2.x) + (v2.x - v1.x) * (v0.y - v2.y));
+
+            float gamma = 1.0f - alpha - beta;
+
+            return alpha >= 0.0f && beta >= 0.0f && gamma >= 0.0f;
         }
     }
 }

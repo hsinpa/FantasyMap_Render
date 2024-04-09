@@ -1,15 +1,8 @@
-using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading.Tasks;
 using UnityEngine;
-using SimpleJSON;
 using Hsinpa.Map;
-using UnityEngine.UI;
-using System.Linq;
-using System.Net;
-using System;
-using Hsinpa.Inference;
+
 using Hsinpa.Algorithm;
 using Unity.Mathematics;
 
@@ -81,6 +74,8 @@ namespace Hsinpa {
                     for (int y = 0; y < height; y++)
                     {
                         points.Clear();
+
+                        map_model.quadTree.RecursiveQueryRect(query_area: 4, x:x, y:y, current_expansion: 0, max_expansion: 4, ref points);
 
                         int index = (x + (width * y)) * 4;
 

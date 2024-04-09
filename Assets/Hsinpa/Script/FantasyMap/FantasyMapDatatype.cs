@@ -37,6 +37,8 @@ public struct FM_Cells_Type {
 
     public uint province;
     public uint state;
+
+    public bool is_valid => p != null;
 }
 
 public struct FM_Burg_Type {

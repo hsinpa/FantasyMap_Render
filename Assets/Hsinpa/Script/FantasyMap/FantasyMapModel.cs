@@ -31,6 +31,13 @@ namespace Hsinpa.Map
         }
 
         #region Mesh
+        public FM_Cells_Type GetCellByPosition(int x, int y, List<int> vertices_ids) {
+                
+
+            return default(FM_Cells_Type);
+        }
+
+
         public MeshDataType RenderMapMesh()
         {
             MeshDataType mesh = new MeshDataType();
@@ -48,8 +55,11 @@ namespace Hsinpa.Map
             for (int vertices_index = 0; vertices_index < vertices_lens; vertices_index++)
             {
                 FM_Vertices_Type vertices_type = vertices_list[vertices_index];
-                vertices[vertices_index] = new Vector3(vertices_type.p[0], 0, vertices_type.p[1]);
+                Vector3 vertice_position = new Vector3(vertices_type.p[0], 0, vertices_type.p[1]);
+                vertices[vertices_index] = vertice_position;
                 uvs[vertices_index] = new Vector2(vertices_type.p[0] / (float)this._width, vertices_type.p[1] / (float)this._height);
+            
+                quadTree.Insert(new QuadTreeUti.Point() { x = vertice_position.x, y = vertice_position.z, id = (int)vertices_type.i});
             }
 
             // Create Triangle
@@ -61,8 +71,6 @@ namespace Hsinpa.Map
                 int cell_vertices_index = vertices_lens + cell_index;
                 vertices[cell_vertices_index] = cell_center;
                 uvs[cell_vertices_index] = new Vector2(cell_center.x / (float)this._width, cell_center.z / (float)this._height);
-
-                quadTree.Insert(new QuadTreeUti.Point() { x = cell_center.x, y = cell_center.z, id = (int)cell_list[cell_index].i });
 
                 for (int cv_index = 0; cv_index < connect_vertices_lens; cv_index++)
                 {
